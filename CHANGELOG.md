@@ -3,6 +3,14 @@
 Alle Änderungen am Code werden hier dokumentiert (Change Log).
 Format: Datum | Version | Beschreibung
 
+## 2026-08-14 — v1.0.1 — Chat-Fix + Modellfilter
+
+- **Fix (wichtig)**: Keine Rückmeldung nach Eingabe — Standard-Modell war `claude-sonnet-5` (nicht im Go-Plan, 403) und `run_error`-Events wurden nicht angezeigt
+  - Standard-Modell ist jetzt `deepseek/deepseek-v4-flash` (verifiziert funktionierend)
+  - `run_error` wird jetzt als Fehlermeldung im UI angezeigt
+- **Fix**: `text_delta`/`thinking_delta`-Events liefern das Feld `delta`, nicht `text` — Frontend liest jetzt `delta` (Fallback `text`)
+- **Fix**: `models.json` enthält jetzt nur noch die 36 per CLI verifizierten Go-Plan-Modelle (statt 54 API-gelisteten, davon 18 nicht nutzbar)
+
 ## 2026-08-14 — v1.0.0 — Initialer Release
 
 - **Neu**: Express-Backend (`server.js`) — spawnt die Command-Code-CLI headless (`cmd -p --output-format json --yolo`), streamt NDJSON-Events als SSE an das Frontend

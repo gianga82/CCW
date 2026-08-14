@@ -25,7 +25,10 @@ export default function App() {
       setModels(m);
       setByOwner(d.byOwner || {});
       const saved = localStorage.getItem('ccw_model');
-      setModel(saved && m.some(x => x.id === saved) ? saved : (m[0]?.id || ''));
+      const pref = ['deepseek/deepseek-v4-flash', 'deepseek/deepseek-v4-pro'];
+      const chosen = saved && m.some(x => x.id === saved) ? saved
+        : pref.find(p => m.some(x => x.id === p)) || (m[0]?.id || '');
+      setModel(chosen);
     }).catch(() => setError('Backend nicht erreichbar'));
   }, []);
 
@@ -38,6 +41,7 @@ export default function App() {
       if (prev.some(s => s.sessionId === sessionId)) return prev;
       return [{ sessionId, title: title || 'Neue Session', updatedAt: Date.now() }, ...prev].slice(0, 50);
     });
+    setActive(prev => prev?.sessionId === sessionId ? prev : { sessionId, title: title || 'Neue Session' });
   }, []);
 
   const newChat = () => {
@@ -199,15 +203,19 @@ function handleEvent(ev, payload, ctx) {
       } else if (t === 'thinking_start') {
         setLast(m => ({ ...m, thinking: (m.thinking ? m.thinking + '\n' : '') + '…' }));
       } else if (t === 'thinking_delta') {
-        setLast(m => ({ ...m, thinking: m.thinking + payload.text }));
+        setLast(m => ({ ...m, thinking: m.thinking + (payload.delta ?? payload.text ?? '') }));
       } else if (t === 'text_delta') {
-        setLast(m => ({ ...m, text: m.text + payload.text }));
+        setLast(m => ({ ...m, text: m.text + (payload.delta ?? payload.text ?? '') }));
       } else if (t === 'tool_queued') {
         setLast(m => ({ ...m, tools: [...m.tools, { id: payload.toolCallId || m.tools.length, name: payload.toolName, input: JSON.stringify(payload.input || {}), status: 'queued', result: '' }] }));
       } else if (t === 'tool_running') {
         setLast(m => ({ ...m, tools: m.tools.map(t => t.id === payload.toolCallId ? { ...t, status: 'running' } : t) }));
       } else if (t === 'tool_completed') {
         setLast(m => ({ ...m, tools: m.tools.map(t => t.id === payload.toolCallId ? { ...t, status: 'done', result: JSON.stringify(payload.result ?? '').slice(0, 2000) } : t) }));
+      } else if (t === 'run_error') {
+        const e = payload.error || {};
+        setError('Modell-Fehler: ' + (e.message || JSON.stringify(e)).slice(0, 300));
+        setRunning(false);
       } else if (t === 'run_end') {
         const r = payload.result || payload;
         const ns = r.nextState || {};
