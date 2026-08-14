@@ -133,13 +133,18 @@ export default function App() {
         <header className="topbar">
           <button className="menu-btn" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menü">☰</button>
           <div className="brand">Command Code <span className="brand-sub">Web</span></div>
-          <select value={model} onChange={e => setModel(e.target.value)} className="model-select" title="Modell wählen">
-            {Object.entries(byOwner).map(([owner, list]) => (
-              <optgroup key={owner} label={owner}>
-                {list.map(m => <option key={m.id} value={m.id}>{m.name || m.id}</option>)}
-              </optgroup>
-            ))}
-          </select>
+          <div className="topbar-right">
+            <select value={model} onChange={e => setModel(e.target.value)} className="model-select" title="Modell wählen">
+              {Object.entries(byOwner).map(([owner, list]) => (
+                <optgroup key={owner} label={owner}>
+                  {list.map(m => <option key={m.id} value={m.id}>{m.name || m.id}</option>)}
+                </optgroup>
+              ))}
+            </select>
+            <button className="refresh-btn" onClick={() => location.reload()} title="Neu laden">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+            </button>
+          </div>
         </header>
         <div className="messages">
           {messages.length === 0 && (

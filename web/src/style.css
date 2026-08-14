@@ -23,6 +23,10 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, -apple
 .topbar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--border); background: var(--panel); }
 .brand { font-weight: 700; font-size: 16px; }
 .brand-sub { color: var(--acc); }
+.topbar-right { display: flex; align-items: center; gap: 8px; }
+.refresh-btn { display: flex; align-items: center; justify-content: center; background: transparent; border: 1px solid var(--border); color: var(--text); border-radius: 8px; width: 36px; height: 36px; cursor: pointer; }
+.refresh-btn:hover { background: #1d2130; }
+.refresh-btn:active { transform: rotate(90deg); transition: transform .2s; }
 .model-select { background: #1d2130; color: var(--text); border: 1px solid var(--border); border-radius: 8px; padding: 7px 10px; font-size: 13px; max-width: 380px; }
 
 .messages { flex: 1; overflow-y: auto; padding: 20px 16px; display: flex; flex-direction: column; gap: 18px; }
@@ -85,6 +89,7 @@ body { background: var(--bg); color: var(--text); font-family: system-ui, -apple
   .topbar { padding: 8px 10px; }
   .brand { font-size: 14px; white-space: nowrap; }
   .model-select { max-width: 46vw; font-size: 12px; padding: 6px 8px; }
+  .refresh-btn { width: 34px; height: 34px; }
   .messages { padding: 14px 10px; gap: 14px; }
   .composer { padding: 8px 10px; gap: 8px; }
   .composer textarea { font-size: 16px; }

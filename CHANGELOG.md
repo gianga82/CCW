@@ -3,6 +3,10 @@
 Alle Änderungen am Code werden hier dokumentiert (Change Log).
 Format: Datum | Version | Beschreibung
 
+## 2026-08-14 — v1.0.2 — Refresh-Button
+
+- **Neu**: Refresh-Button (↻) in der Kopfzeile neben der Modellwahl — lädt die App neu (hilfreich bei hängendem Zustand)
+
 ## 2026-08-14 — v1.0.1 — Chat-Fix + Modellfilter
 
 - **Fix (wichtig)**: Keine Rückmeldung nach Eingabe — Standard-Modell war `claude-sonnet-5` (nicht im Go-Plan, 403) und `run_error`-Events wurden nicht angezeigt
