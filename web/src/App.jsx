@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import MarkdownIt from 'markdown-it';
+
+const md = new MarkdownIt({ html: false, linkify: true, breaks: true });
 
 const LS_SESSIONS = 'ccw_sessions';
 
@@ -16,6 +19,8 @@ export default function App() {
   const [running, setRunning] = useState(false);
   const [input, setInput] = useState('');
   const [error, setError] = useState('');
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settings, setSettings] = useState({ effort: '', maxTurns: 100, markdown: true });
   const abortRef = useRef(null);
   const endRef = useRef(null);
 
@@ -33,6 +38,10 @@ export default function App() {
   }, []);
 
   useEffect(() => { localStorage.setItem('ccw_model', model); }, [model]);
+  useEffect(() => { localStorage.setItem('ccw_settings', JSON.stringify(settings)); }, [settings]);
+  useEffect(() => {
+    try { const s = JSON.parse(localStorage.getItem('ccw_settings') || 'null'); if (s) setSettings({ ...settings, ...s }); } catch {}
+  }, []);
   useEffect(() => { localStorage.setItem(LS_SESSIONS, JSON.stringify(sessions)); }, [sessions]);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
 
@@ -48,6 +57,21 @@ export default function App() {
     setActive(null);
     setMessages([]);
     setError('');
+  };
+
+  const deleteSession = async (s) => {
+    if (!confirm(`Session „${s.title}“ wirklich löschen?`)) return;
+    try { await fetch('/api/session/' + s.sessionId, { method: 'DELETE' }); } catch {}
+    setSessions(prev => prev.filter(x => x.sessionId !== s.sessionId));
+    if (active?.sessionId === s.sessionId) newChat();
+  };
+
+  const renameSession = (s) => {
+    const name = prompt('Neuer Name für die Session:', s.title);
+    if (name && name.trim()) {
+      setSessions(prev => prev.map(x => x.sessionId === s.sessionId ? { ...x, title: name.trim() } : x));
+      setActive(prev => prev?.sessionId === s.sessionId ? { ...prev, title: name.trim() } : prev);
+    }
   };
 
   const selectSession = (s) => {
@@ -82,7 +106,7 @@ export default function App() {
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg, model, sessionId: sid }),
+        body: JSON.stringify({ message: msg, model, sessionId: sid, effort: settings.effort || undefined, maxTurns: settings.maxTurns || undefined }),
         signal: abort.signal,
       });
       if (!res.ok) {
@@ -128,7 +152,7 @@ export default function App() {
   return (
     <div className="layout">
       <div className={'backdrop' + (menuOpen ? ' show' : '')} onClick={() => setMenuOpen(false)} />
-      <Sidebar sessions={sessions} active={active} onNew={() => { newChat(); setMenuOpen(false); }} onSelect={(s) => { selectSession(s); setMenuOpen(false); }} open={menuOpen} />
+      <Sidebar sessions={sessions} active={active} onNew={() => { newChat(); setMenuOpen(false); }} onSelect={(s) => { selectSession(s); setMenuOpen(false); }} open={menuOpen} onDelete={deleteSession} onRename={renameSession} />
       <main className="chat">
         <header className="topbar">
           <button className="menu-btn" onClick={() => setMenuOpen(!menuOpen)} aria-label="Menü">☰</button>
@@ -144,8 +168,33 @@ export default function App() {
             <button className="refresh-btn" onClick={() => location.reload()} title="Neu laden">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
             </button>
+            <button className={'refresh-btn' + (settingsOpen ? ' active' : '')} onClick={() => setSettingsOpen(!settingsOpen)} title="Einstellungen">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            </button>
           </div>
         </header>
+        {settingsOpen && (
+          <div className="settings-panel">
+            <h3>Einstellungen</h3>
+            <label>Reasoning-Effort
+              <select value={settings.effort} onChange={e => setSettings({ ...settings, effort: e.target.value })}>
+                <option value="">Standard (Auto)</option>
+                <option value="low">Niedrig (schnell)</option>
+                <option value="medium">Mittel</option>
+                <option value="high">Hoch (gründlich)</option>
+              </select>
+            </label>
+            <label>Max. Antwort-Umdrehungen
+              <input type="number" min="1" max="200" value={settings.maxTurns}
+                onChange={e => setSettings({ ...settings, maxTurns: Number(e.target.value) || 100 })} />
+            </label>
+            <label className="switch-row">Markdown-Rendering
+              <input type="checkbox" className="toggle" checked={settings.markdown}
+                onChange={e => setSettings({ ...settings, markdown: e.target.checked })} />
+            </label>
+            <p className="hint">Einstellungen gelten ab der nächsten Nachricht.</p>
+          </div>
+        )}
         <div className="messages">
           {messages.length === 0 && (
             <div className="welcome">
@@ -153,7 +202,7 @@ export default function App() {
               <p>Chatte über die Command-Code-CLI mit deinen Go-Plan-Modellen. Tools werden live angezeigt.</p>
             </div>
           )}
-          {messages.map((m, i) => <Message key={i} m={m} />)}
+          {messages.map((m, i) => <Message key={i} m={m} markdown={settings.markdown} />)}
           <div ref={endRef} />
         </div>
         {error && <div className="error">{error}</div>}
@@ -166,8 +215,8 @@ export default function App() {
             disabled={running}
             rows={2}
           />
-          <button onClick={send} disabled={running || !input.trim()}>
-            {running ? 'Läuft …' : 'Senden'}
+          <button onClick={running ? () => abortRef.current?.abort() : send} disabled={running ? false : !input.trim()}>
+            {running ? '■ Stop' : 'Senden'}
           </button>
         </footer>
       </main>
@@ -175,17 +224,22 @@ export default function App() {
   );
 }
 
-function Sidebar({ sessions, active, onNew, onSelect, open }) {
+function Sidebar({ sessions, active, onNew, onSelect, open, onDelete, onRename }) {
   return (
     <aside className={'sidebar' + (open ? ' open' : '')}>
       <button className="new-btn" onClick={onNew}>+ Neue Session</button>
       <div className="sessions">
         {sessions.length === 0 && <p className="hint">Noch keine Sessions</p>}
         {sessions.map(s => (
-          <button key={s.sessionId} className={'session' + (active?.sessionId === s.sessionId ? ' active' : '')}
-            onClick={() => onSelect(s)} title={s.sessionId}>
-            {s.title}
-          </button>
+          <div key={s.sessionId} className={'session-row' + (active?.sessionId === s.sessionId ? ' active' : '')}>
+            <button className="session" onClick={() => onSelect(s)} title={s.sessionId}>
+              {s.title}
+            </button>
+            <div className="session-actions">
+              <button className="mini-btn" onClick={() => onRename(s)} title="Umbenennen">✎</button>
+              <button className="mini-btn del" onClick={() => onDelete(s)} title="Löschen">🗑</button>
+            </div>
+          </div>
         ))}
       </div>
     </aside>
@@ -240,11 +294,31 @@ function handleEvent(ev, payload, ctx) {
   }
 }
 
-function Message({ m }) {
+function CopyBtn({ text }) {
+  const [done, setDone] = useState(false);
+  return (
+    <button className="copy-btn" onClick={async () => {
+      try { await navigator.clipboard.writeText(text); setDone(true); setTimeout(() => setDone(false), 1500); } catch {}
+    }} title="Kopieren">
+      {done ? '✓' : '⧉'}
+    </button>
+  );
+}
+
+function Message({ m, markdown }) {
   return (
     <div className={'msg ' + m.role}>
-      <div className="who">{m.role === 'user' ? 'Du' : 'Command Code'}</div>
-      {m.text && <div className="text">{m.text}</div>}
+      <div className="who">
+        {m.role === 'user' ? 'Du' : 'Command Code'}
+        {m.role === 'assistant' && m.text && <CopyBtn text={m.text} />}
+      </div>
+      {m.text && (
+        <div className={'text' + (markdown && m.role === 'assistant' ? ' md' : '')}>
+          {markdown && m.role === 'assistant'
+            ? <div dangerouslySetInnerHTML={{ __html: md.render(m.text) }} />
+            : m.text}
+        </div>
+      )}
       {m.thinking && m.role === 'assistant' && (
         <details className="thinking">
           <summary>Gedanken</summary>

@@ -3,6 +3,16 @@
 Alle Änderungen am Code werden hier dokumentiert (Change Log).
 Format: Datum | Version | Beschreibung
 
+## 2026-08-14 — v1.1.0 — Open-WebUI-inspirierte Features (eigene Varianten)
+
+- **Neu**: ⚙️ Einstellungen-Panel (Inspiration: Open WebUI Settings) — Reasoning-Effort (niedrig/mittel/hoch), Max-Umdrehungen-Regler, Markdown-Rendering-Toggle; wird per localStorage gemerkt
+- **Neu**: Markdown-Rendering der Antworten (markdown-it) — Überschriften, Listen, Tabellen, Code, Zitate (Inspiration: Open WebUI Full Markdown)
+- **Neu**: Copy-Button (⧉) auf jeder Antwort (Inspiration: Open WebUI Nachricht-Aktionen)
+- **Neu**: ■ Stop-Button während laufender Antwort — bricht den CLI-Prozess ab (Inspiration: Open WebUI ChatControls)
+- **Neu**: Session umbenennen (✎) und löschen (🗑) in der Seitenleiste; Backend-Endpoint `DELETE /api/session/:id` mit UUID-Validierung gegen Path-Traversal (400 bei ungültigen IDs, getestet)
+- **Neu**: PWA-Unterstützung — Manifest, SVG-Icon, Installierbar als App auf dem Handy (Inspiration: Open WebUI PWA)
+- Backend: `/api/chat` akzeptiert jetzt `effort`, `maxTurns`, `name` und reicht sie als CLI-Flags (`--effort`, `--max-turns`, `-n`) durch
+
 ## 2026-08-14 — v1.0.2 — Refresh-Button
 
 - **Neu**: Refresh-Button (↻) in der Kopfzeile neben der Modellwahl — lädt die App neu (hilfreich bei hängendem Zustand)

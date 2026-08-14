@@ -55,7 +55,7 @@ app.get('/api/models', (req, res) => {
 
 // ---------- Chat (SSE) ----------
 app.post('/api/chat', (req, res) => {
-  const { message, model, sessionId, workdir, files } = req.body || {};
+  const { message, model, sessionId, workdir, files, effort, maxTurns, name } = req.body || {};
   if (!message || !message.trim()) {
     return res.status(400).json({ error: 'message required' });
   }
@@ -64,6 +64,9 @@ app.post('/api/chat', (req, res) => {
   const args = ['-p', message, '--output-format', 'json', '--yolo', '--no-auto-update', '--skip-onboarding'];
   if (model) args.push('--model', model);
   if (sessionId) args.push('--resume', sessionId);
+  if (effort) args.push('--effort', String(effort));
+  if (maxTurns) args.push('--max-turns', String(maxTurns));
+  if (name) args.push('-n', String(name));
 
 
   res.setHeader('Content-Type', 'text/event-stream');
@@ -123,6 +126,26 @@ app.post('/api/chat', (req, res) => {
       child.kill('SIGKILL');
     }
   });
+});
+
+// ---------- Session löschen (nur gültige UUIDs) ----------
+app.delete('/api/session/:id', (req, res) => {
+  const id = req.params.id;
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(id)) {
+    return res.status(400).json({ error: 'Ungültige Session-ID' });
+  }
+  const home = process.env.HOME || '/root';
+  const projects = path.join(home, '.commandcode', 'projects');
+  let deleted = 0;
+  for (const proj of fs.readdirSync(projects)) {
+    for (const f of fs.readdirSync(path.join(projects, proj))) {
+      if (f.startsWith(id)) {
+        fs.unlinkSync(path.join(projects, proj, f));
+        deleted++;
+      }
+    }
+  }
+  res.json({ deleted });
 });
 
 // ---------- Statisches Frontend ----------
